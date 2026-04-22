@@ -2,39 +2,69 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Delete;
 use App\Repository\ConsultationRepository;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ConsultationRepository::class)]
+#[ApiResource(
+    operations: [
+        new GetCollection(normalizationContext: ['groups' => ['consultation:list']]),
+        new Get(normalizationContext: ['groups' => ['consultation:read']]),
+        new Post(denormalizationContext: ['groups' => ['consultation:write']]),
+        new Put(denormalizationContext: ['groups' => ['consultation:write']]),
+        new Patch(denormalizationContext: ['groups' => ['consultation:write']]),
+        new Delete()
+    ],
+    order: ['date' => 'DESC']
+)]
 class Consultation
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['consultation:list', 'consultation:read', 'rdv:read', 'ordonnance:read'])]
     private ?int $id = null;
 
     #[ORM\Column]
+    #[Assert\NotNull]
+    #[Groups(['consultation:list', 'consultation:read', 'consultation:write'])]
     private ?\DateTimeImmutable $date = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: 'text', nullable: true)]
+    #[Groups(['consultation:read', 'consultation:write'])]
     private ?string $anamnese = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: 'text', nullable: true)]
+    #[Groups(['consultation:read', 'consultation:write'])]
     private ?string $diagnostic = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: 'text', nullable: true)]
+    #[Groups(['consultation:read', 'consultation:write'])]
     private ?string $notes = null;
 
-    #[ORM\OneToOne(inversedBy: 'consultation', cascade: ['persist', 'remove'])]
-    #[ORM\JoinColumn(nullable: true)]
+    #[ORM\OneToOne(inversedBy: 'consultation', cascade: ['persist'])]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull]
+    #[Groups(['consultation:list', 'consultation:read', 'consultation:write'])]
     private ?RendezVous $rendezVous = null;
 
-    #[ORM\ManyToOne]
+    #[ORM\ManyToOne(inversedBy: 'consultations')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull]
+    #[Groups(['consultation:list', 'consultation:read', 'consultation:write'])]
     private ?Medecin $medecin = null;
 
     #[ORM\OneToOne(mappedBy: 'consultation', cascade: ['persist', 'remove'])]
+    #[Groups(['consultation:read'])]
     private ?Ordonnance $ordonnance = null;
 
     public function getId(): ?int
@@ -115,6 +145,12 @@ class Consultation
 
     public function setOrdonnance(?Ordonnance $ordonnance): static
     {
+        if ($ordonnance === null && $this->ordonnance !== null) {
+            $this->ordonnance->setConsultation(null);
+        }
+        if ($ordonnance !== null && $ordonnance->getConsultation() !== $this) {
+            $ordonnance->setConsultation($this);
+        }
         $this->ordonnance = $ordonnance;
         return $this;
     }

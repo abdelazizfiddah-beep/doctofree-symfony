@@ -2,33 +2,60 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Delete;
 use App\Repository\OrdonnanceRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: OrdonnanceRepository::class)]
+#[ApiResource(
+    operations: [
+        new GetCollection(normalizationContext: ['groups' => ['ordonnance:list']]),
+        new Get(normalizationContext: ['groups' => ['ordonnance:read']]),
+        new Post(denormalizationContext: ['groups' => ['ordonnance:write']]),
+        new Put(denormalizationContext: ['groups' => ['ordonnance:write']]),
+        new Delete()
+    ],
+    order: ['dateEmission' => 'DESC']
+)]
 class Ordonnance
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['ordonnance:list', 'ordonnance:read', 'consultation:read'])]
     private ?int $id = null;
 
     #[ORM\Column]
+    #[Assert\NotNull]
+    #[Groups(['ordonnance:list', 'ordonnance:read', 'ordonnance:write'])]
     private ?\DateTimeImmutable $dateEmission = null;
 
-    #[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true)]
+    #[ORM\Column]
+    #[Assert\NotNull]
+    #[Groups(['ordonnance:list', 'ordonnance:read', 'ordonnance:write'])]
     private ?\DateTimeImmutable $dateValidite = null;
 
-    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[ORM\Column(type: 'text', nullable: true)]
+    #[Groups(['ordonnance:read', 'ordonnance:write'])]
     private ?string $instructions = null;
 
-    #[ORM\OneToOne(inversedBy: 'ordonnance', cascade: ['persist', 'remove'])]
+    #[ORM\OneToOne(inversedBy: 'ordonnance')]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull]
+    #[Groups(['ordonnance:list', 'ordonnance:read', 'ordonnance:write'])]
     private ?Consultation $consultation = null;
 
-    #[ORM\OneToMany(mappedBy: 'ordonnance', targetEntity: Prescription::class, cascade: ['persist', 'remove'])]
+    #[ORM\OneToMany(targetEntity: Prescription::class, mappedBy: 'ordonnance', cascade: ['persist', 'remove'])]
+    #[Groups(['ordonnance:read'])]
     private Collection $prescriptions;
 
     public function __construct()
@@ -57,7 +84,7 @@ class Ordonnance
         return $this->dateValidite;
     }
 
-    public function setDateValidite(?\DateTimeImmutable $dateValidite): static
+    public function setDateValidite(\DateTimeImmutable $dateValidite): static
     {
         $this->dateValidite = $dateValidite;
         return $this;

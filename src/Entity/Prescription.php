@@ -2,36 +2,68 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Delete;
 use App\Repository\PrescriptionRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PrescriptionRepository::class)]
+#[ApiResource(
+    operations: [
+        new GetCollection(normalizationContext: ['groups' => ['prescription:list']]),
+        new Get(normalizationContext: ['groups' => ['prescription:read']]),
+        new Post(denormalizationContext: ['groups' => ['prescription:write']]),
+        new Put(denormalizationContext: ['groups' => ['prescription:write']]),
+        new Delete()
+    ]
+)]
 class Prescription
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['prescription:list', 'prescription:read', 'ordonnance:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: 'La posologie est obligatoire')]
+    #[Groups(['prescription:list', 'prescription:read', 'prescription:write', 'ordonnance:read'])]
     private ?string $posologie = null;
 
     #[ORM\Column(length: 100)]
+    #[Assert\NotBlank]
+    #[Groups(['prescription:read', 'prescription:write', 'ordonnance:read'])]
     private ?string $frequence = null;
 
     #[ORM\Column]
+    #[Assert\NotNull]
+    #[Assert\Positive]
+    #[Groups(['prescription:read', 'prescription:write', 'ordonnance:read'])]
     private ?int $dureeJours = null;
 
     #[ORM\Column]
+    #[Assert\NotNull]
+    #[Assert\Positive]
+    #[Groups(['prescription:read', 'prescription:write', 'ordonnance:read'])]
     private ?int $quantite = null;
 
-    #[ORM\ManyToOne]
+    #[ORM\ManyToOne(inversedBy: 'prescriptions')]
     #[ORM\JoinColumn(nullable: false)]
-    private ?Ordonnance $ordonnance = null;
-
-    #[ORM\ManyToOne]
-    #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull]
+    #[Groups(['prescription:list', 'prescription:read', 'prescription:write', 'ordonnance:read'])]
     private ?Medicament $medicament = null;
+
+    #[ORM\ManyToOne(inversedBy: 'prescriptions')]
+    #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull]
+    #[Groups(['prescription:read', 'prescription:write'])]
+    private ?Ordonnance $ordonnance = null;
 
     public function getId(): ?int
     {
@@ -46,7 +78,6 @@ class Prescription
     public function setPosologie(string $posologie): static
     {
         $this->posologie = $posologie;
-
         return $this;
     }
 
@@ -58,7 +89,6 @@ class Prescription
     public function setFrequence(string $frequence): static
     {
         $this->frequence = $frequence;
-
         return $this;
     }
 
@@ -70,7 +100,6 @@ class Prescription
     public function setDureeJours(int $dureeJours): static
     {
         $this->dureeJours = $dureeJours;
-
         return $this;
     }
 
@@ -82,19 +111,6 @@ class Prescription
     public function setQuantite(int $quantite): static
     {
         $this->quantite = $quantite;
-
-        return $this;
-    }
-
-    public function getOrdonnance(): ?Ordonnance
-    {
-        return $this->ordonnance;
-    }
-
-    public function setOrdonnance(?Ordonnance $ordonnance): static
-    {
-        $this->ordonnance = $ordonnance;
-
         return $this;
     }
 
@@ -106,7 +122,17 @@ class Prescription
     public function setMedicament(?Medicament $medicament): static
     {
         $this->medicament = $medicament;
+        return $this;
+    }
 
+    public function getOrdonnance(): ?Ordonnance
+    {
+        return $this->ordonnance;
+    }
+
+    public function setOrdonnance(?Ordonnance $ordonnance): static
+    {
+        $this->ordonnance = $ordonnance;
         return $this;
     }
 }

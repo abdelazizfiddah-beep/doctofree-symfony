@@ -2,50 +2,87 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Delete;
 use App\Repository\PatientRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
-use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PatientRepository::class)]
+#[ApiResource(
+    operations: [
+        new GetCollection(normalizationContext: ['groups' => ['patient:list']]),
+        new Get(normalizationContext: ['groups' => ['patient:read']]),
+        new Post(denormalizationContext: ['groups' => ['patient:write']]),
+        new Put(denormalizationContext: ['groups' => ['patient:write']]),
+        new Patch(denormalizationContext: ['groups' => ['patient:write']]),
+        new Delete()
+    ],
+    order: ['nom' => 'ASC'],
+    paginationItemsPerPage: 10
+)]
 class Patient
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['patient:list', 'patient:read', 'rdv:read', 'consultation:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 100)]
+    #[Assert\NotBlank(message: 'Le nom est obligatoire')]
+    #[Assert\Length(max: 100)]
+    #[Groups(['patient:list', 'patient:read', 'patient:write', 'rdv:read', 'consultation:read'])]
     private ?string $nom = null;
 
     #[ORM\Column(length: 100)]
+    #[Assert\NotBlank(message: 'Le prénom est obligatoire')]
+    #[Assert\Length(max: 100)]
+    #[Groups(['patient:list', 'patient:read', 'patient:write', 'rdv:read', 'consultation:read'])]
     private ?string $prenom = null;
 
     #[ORM\Column(length: 180)]
+    #[Assert\NotBlank]
+    #[Assert\Email(message: 'Email invalide')]
+    #[Groups(['patient:read', 'patient:write'])]
     private ?string $email = null;
 
-    #[ORM\Column(length: 20, nullable: true)]
+    #[ORM\Column(length: 20)]
+    #[Assert\NotBlank]
+    #[Groups(['patient:read', 'patient:write'])]
     private ?string $telephone = null;
 
-    #[ORM\Column(type: Types::DATE_IMMUTABLE)]
+    #[ORM\Column]
+    #[Assert\NotNull]
+    #[Groups(['patient:read', 'patient:write'])]
     private ?\DateTimeImmutable $dateNaissance = null;
 
     #[ORM\Column(length: 15)]
+    #[Assert\NotBlank]
+    #[Assert\Length(exactly: 15, exactMessage: 'Le numéro de sécurité sociale doit contenir 15 caractères')]
+    #[Groups(['patient:read', 'patient:write'])]
     private ?string $numeroSecuriteSociale = null;
 
     #[ORM\Column]
+    #[Groups(['patient:read'])]
     private ?\DateTimeImmutable $dateInscription = null;
 
-    /**
-     * @var Collection<int, RendezVous>
-     */
     #[ORM\OneToMany(targetEntity: RendezVous::class, mappedBy: 'patient')]
+    #[Groups(['patient:read'])]
     private Collection $rendezVous;
 
     public function __construct()
     {
         $this->rendezVous = new ArrayCollection();
+        $this->dateInscription = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
@@ -61,7 +98,6 @@ class Patient
     public function setNom(string $nom): static
     {
         $this->nom = $nom;
-
         return $this;
     }
 
@@ -73,7 +109,6 @@ class Patient
     public function setPrenom(string $prenom): static
     {
         $this->prenom = $prenom;
-
         return $this;
     }
 
@@ -85,7 +120,6 @@ class Patient
     public function setEmail(string $email): static
     {
         $this->email = $email;
-
         return $this;
     }
 
@@ -94,10 +128,9 @@ class Patient
         return $this->telephone;
     }
 
-    public function setTelephone(?string $telephone): static
+    public function setTelephone(string $telephone): static
     {
         $this->telephone = $telephone;
-
         return $this;
     }
 
@@ -109,7 +142,6 @@ class Patient
     public function setDateNaissance(\DateTimeImmutable $dateNaissance): static
     {
         $this->dateNaissance = $dateNaissance;
-
         return $this;
     }
 
@@ -121,7 +153,6 @@ class Patient
     public function setNumeroSecuriteSociale(string $numeroSecuriteSociale): static
     {
         $this->numeroSecuriteSociale = $numeroSecuriteSociale;
-
         return $this;
     }
 
@@ -133,13 +164,9 @@ class Patient
     public function setDateInscription(\DateTimeImmutable $dateInscription): static
     {
         $this->dateInscription = $dateInscription;
-
         return $this;
     }
 
-    /**
-     * @return Collection<int, RendezVous>
-     */
     public function getRendezVous(): Collection
     {
         return $this->rendezVous;
@@ -151,7 +178,6 @@ class Patient
             $this->rendezVous->add($rendezVous);
             $rendezVous->setPatient($this);
         }
-
         return $this;
     }
 
@@ -162,7 +188,6 @@ class Patient
                 $rendezVous->setPatient(null);
             }
         }
-
         return $this;
     }
 }

@@ -2,50 +2,91 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\ApiFilter;
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use App\Repository\MedecinRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: MedecinRepository::class)]
+#[ApiResource(
+    operations: [
+        new GetCollection(normalizationContext: ['groups' => ['medecin:list']]),
+        new Get(normalizationContext: ['groups' => ['medecin:read']]),
+        new Post(denormalizationContext: ['groups' => ['medecin:write']]),
+        new Put(denormalizationContext: ['groups' => ['medecin:write']]),
+        new Patch(denormalizationContext: ['groups' => ['medecin:write']]),
+        new Delete()
+    ],
+    order: ['nom' => 'ASC'],
+    paginationItemsPerPage: 10
+)]
+#[ApiFilter(SearchFilter::class, properties: ['nom' => 'partial', 'specialites.libelle' => 'partial'])]
 class Medecin
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['medecin:list', 'medecin:read', 'rdv:read', 'consultation:read', 'cabinet:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 100)]
+    #[Assert\NotBlank(message: 'Le nom est obligatoire')]
+    #[Groups(['medecin:list', 'medecin:read', 'medecin:write', 'rdv:read', 'consultation:read', 'cabinet:read'])]
     private ?string $nom = null;
 
     #[ORM\Column(length: 100)]
+    #[Assert\NotBlank(message: 'Le prénom est obligatoire')]
+    #[Groups(['medecin:list', 'medecin:read', 'medecin:write', 'rdv:read', 'consultation:read', 'cabinet:read'])]
     private ?string $prenom = null;
 
-    #[ORM\Column(length: 180)]
-    private ?string $email = null;
-
-    #[ORM\Column(length: 20, nullable: true)]
+    #[ORM\Column(length: 20)]
+    #[Assert\NotBlank]
+    #[Groups(['medecin:read', 'medecin:write'])]
     private ?string $telephone = null;
 
-    #[ORM\Column(length: 11)]
+    #[ORM\Column(length: 180)]
+    #[Assert\NotBlank]
+    #[Assert\Email]
+    #[Groups(['medecin:read', 'medecin:write'])]
+    private ?string $email = null;
+
+    #[ORM\Column(length: 11, unique: true)]
+    #[Assert\NotBlank]
+    #[Assert\Length(exactly: 11, exactMessage: 'Le RPPS doit contenir 11 caractères')]
+    #[Groups(['medecin:read', 'medecin:write'])]
     private ?string $rpps = null;
 
-    /**
-     * @var Collection<int, Specialite>
-     */
     #[ORM\ManyToMany(targetEntity: Specialite::class, inversedBy: 'medecins')]
+    #[Groups(['medecin:list', 'medecin:read', 'medecin:write'])]
     private Collection $specialites;
 
-    /**
-     * @var Collection<int, Cabinet>
-     */
-    #[ORM\ManyToMany(targetEntity: Cabinet::class, mappedBy: 'medecins')]
+    #[ORM\ManyToMany(targetEntity: Cabinet::class, inversedBy: 'medecins')]
+    #[Groups(['medecin:read', 'medecin:write'])]
     private Collection $cabinets;
+
+    #[ORM\OneToMany(targetEntity: RendezVous::class, mappedBy: 'medecin')]
+    private Collection $rendezVous;
+
+    #[ORM\OneToMany(targetEntity: Consultation::class, mappedBy: 'medecin')]
+    private Collection $consultations;
 
     public function __construct()
     {
         $this->specialites = new ArrayCollection();
         $this->cabinets = new ArrayCollection();
+        $this->rendezVous = new ArrayCollection();
+        $this->consultations = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -61,7 +102,6 @@ class Medecin
     public function setNom(string $nom): static
     {
         $this->nom = $nom;
-
         return $this;
     }
 
@@ -73,7 +113,17 @@ class Medecin
     public function setPrenom(string $prenom): static
     {
         $this->prenom = $prenom;
+        return $this;
+    }
 
+    public function getTelephone(): ?string
+    {
+        return $this->telephone;
+    }
+
+    public function setTelephone(string $telephone): static
+    {
+        $this->telephone = $telephone;
         return $this;
     }
 
@@ -85,19 +135,6 @@ class Medecin
     public function setEmail(string $email): static
     {
         $this->email = $email;
-
-        return $this;
-    }
-
-    public function getTelephone(): ?string
-    {
-        return $this->telephone;
-    }
-
-    public function setTelephone(?string $telephone): static
-    {
-        $this->telephone = $telephone;
-
         return $this;
     }
 
@@ -109,13 +146,9 @@ class Medecin
     public function setRpps(string $rpps): static
     {
         $this->rpps = $rpps;
-
         return $this;
     }
 
-    /**
-     * @return Collection<int, Specialite>
-     */
     public function getSpecialites(): Collection
     {
         return $this->specialites;
@@ -125,24 +158,16 @@ class Medecin
     {
         if (!$this->specialites->contains($specialite)) {
             $this->specialites->add($specialite);
-            $specialite->addMedecin($this);
         }
-
         return $this;
     }
 
     public function removeSpecialite(Specialite $specialite): static
     {
-        if ($this->specialites->removeElement($specialite)) {
-            $specialite->removeMedecin($this);
-        }
-
+        $this->specialites->removeElement($specialite);
         return $this;
     }
 
-    /**
-     * @return Collection<int, Cabinet>
-     */
     public function getCabinets(): Collection
     {
         return $this->cabinets;
@@ -152,18 +177,23 @@ class Medecin
     {
         if (!$this->cabinets->contains($cabinet)) {
             $this->cabinets->add($cabinet);
-            $cabinet->addMedecin($this);
         }
-
         return $this;
     }
 
     public function removeCabinet(Cabinet $cabinet): static
     {
-        if ($this->cabinets->removeElement($cabinet)) {
-            $cabinet->removeMedecin($this);
-        }
-
+        $this->cabinets->removeElement($cabinet);
         return $this;
+    }
+
+    public function getRendezVous(): Collection
+    {
+        return $this->rendezVous;
+    }
+
+    public function getConsultations(): Collection
+    {
+        return $this->consultations;
     }
 }
