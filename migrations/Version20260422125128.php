@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20260422123044 extends AbstractMigration
+final class Version20260422125128 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -24,7 +24,6 @@ final class Version20260422123044 extends AbstractMigration
         $this->addSql('CREATE TABLE consultation (id INT AUTO_INCREMENT NOT NULL, date DATETIME NOT NULL, anamnese LONGTEXT DEFAULT NULL, diagnostic LONGTEXT DEFAULT NULL, notes LONGTEXT DEFAULT NULL, rendez_vous_id INT DEFAULT NULL, medecin_id INT NOT NULL, UNIQUE INDEX UNIQ_964685A691EF7EAA (rendez_vous_id), INDEX IDX_964685A64F31A84 (medecin_id), PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4');
         $this->addSql('CREATE TABLE medecin (id INT AUTO_INCREMENT NOT NULL, nom VARCHAR(100) NOT NULL, prenom VARCHAR(100) NOT NULL, email VARCHAR(180) NOT NULL, telephone VARCHAR(20) DEFAULT NULL, rpps VARCHAR(11) NOT NULL, PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4');
         $this->addSql('CREATE TABLE medecin_specialite (medecin_id INT NOT NULL, specialite_id INT NOT NULL, INDEX IDX_3F5A311B4F31A84 (medecin_id), INDEX IDX_3F5A311B2195E0F0 (specialite_id), PRIMARY KEY (medecin_id, specialite_id)) DEFAULT CHARACTER SET utf8mb4');
-        $this->addSql('CREATE TABLE medecin_cabinet (medecin_id INT NOT NULL, cabinet_id INT NOT NULL, INDEX IDX_32C4C08D4F31A84 (medecin_id), INDEX IDX_32C4C08DD351EC (cabinet_id), PRIMARY KEY (medecin_id, cabinet_id)) DEFAULT CHARACTER SET utf8mb4');
         $this->addSql('CREATE TABLE medicament (id INT AUTO_INCREMENT NOT NULL, nom VARCHAR(150) NOT NULL, dci VARCHAR(150) DEFAULT NULL, forme VARCHAR(100) DEFAULT NULL, dosage VARCHAR(100) DEFAULT NULL, PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4');
         $this->addSql('CREATE TABLE ordonnance (id INT AUTO_INCREMENT NOT NULL, date_emission DATETIME NOT NULL, date_validite DATE DEFAULT NULL, instructions LONGTEXT DEFAULT NULL, consultation_id INT DEFAULT NULL, UNIQUE INDEX UNIQ_924B326C62FF6CDF (consultation_id), PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4');
         $this->addSql('CREATE TABLE patient (id INT AUTO_INCREMENT NOT NULL, nom VARCHAR(100) NOT NULL, prenom VARCHAR(100) NOT NULL, email VARCHAR(180) NOT NULL, telephone VARCHAR(20) DEFAULT NULL, date_naissance DATE NOT NULL, numero_securite_sociale VARCHAR(15) NOT NULL, date_inscription DATETIME NOT NULL, PRIMARY KEY (id)) DEFAULT CHARACTER SET utf8mb4');
@@ -36,8 +35,6 @@ final class Version20260422123044 extends AbstractMigration
         $this->addSql('ALTER TABLE consultation ADD CONSTRAINT FK_964685A64F31A84 FOREIGN KEY (medecin_id) REFERENCES medecin (id)');
         $this->addSql('ALTER TABLE medecin_specialite ADD CONSTRAINT FK_3F5A311B4F31A84 FOREIGN KEY (medecin_id) REFERENCES medecin (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE medecin_specialite ADD CONSTRAINT FK_3F5A311B2195E0F0 FOREIGN KEY (specialite_id) REFERENCES specialite (id) ON DELETE CASCADE');
-        $this->addSql('ALTER TABLE medecin_cabinet ADD CONSTRAINT FK_32C4C08D4F31A84 FOREIGN KEY (medecin_id) REFERENCES medecin (id) ON DELETE CASCADE');
-        $this->addSql('ALTER TABLE medecin_cabinet ADD CONSTRAINT FK_32C4C08DD351EC FOREIGN KEY (cabinet_id) REFERENCES cabinet (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE ordonnance ADD CONSTRAINT FK_924B326C62FF6CDF FOREIGN KEY (consultation_id) REFERENCES consultation (id)');
         $this->addSql('ALTER TABLE prescription ADD CONSTRAINT FK_1FBFB8D92BF23B8F FOREIGN KEY (ordonnance_id) REFERENCES ordonnance (id)');
         $this->addSql('ALTER TABLE prescription ADD CONSTRAINT FK_1FBFB8D9AB0D61F7 FOREIGN KEY (medicament_id) REFERENCES medicament (id)');
@@ -52,8 +49,6 @@ final class Version20260422123044 extends AbstractMigration
         $this->addSql('ALTER TABLE consultation DROP FOREIGN KEY FK_964685A64F31A84');
         $this->addSql('ALTER TABLE medecin_specialite DROP FOREIGN KEY FK_3F5A311B4F31A84');
         $this->addSql('ALTER TABLE medecin_specialite DROP FOREIGN KEY FK_3F5A311B2195E0F0');
-        $this->addSql('ALTER TABLE medecin_cabinet DROP FOREIGN KEY FK_32C4C08D4F31A84');
-        $this->addSql('ALTER TABLE medecin_cabinet DROP FOREIGN KEY FK_32C4C08DD351EC');
         $this->addSql('ALTER TABLE ordonnance DROP FOREIGN KEY FK_924B326C62FF6CDF');
         $this->addSql('ALTER TABLE prescription DROP FOREIGN KEY FK_1FBFB8D92BF23B8F');
         $this->addSql('ALTER TABLE prescription DROP FOREIGN KEY FK_1FBFB8D9AB0D61F7');
@@ -63,7 +58,6 @@ final class Version20260422123044 extends AbstractMigration
         $this->addSql('DROP TABLE consultation');
         $this->addSql('DROP TABLE medecin');
         $this->addSql('DROP TABLE medecin_specialite');
-        $this->addSql('DROP TABLE medecin_cabinet');
         $this->addSql('DROP TABLE medicament');
         $this->addSql('DROP TABLE ordonnance');
         $this->addSql('DROP TABLE patient');

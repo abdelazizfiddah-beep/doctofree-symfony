@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\CabinetRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: CabinetRepository::class)]
@@ -21,6 +23,17 @@ class Cabinet
 
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $telephone = null;
+
+    /**
+     * @var Collection<int, Medecin>
+     */
+    #[ORM\ManyToMany(targetEntity: Medecin::class, mappedBy: 'cabinets')]
+    private Collection $medecins;
+
+    public function __construct()
+    {
+        $this->medecins = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -59,6 +72,33 @@ class Cabinet
     public function setTelephone(?string $telephone): static
     {
         $this->telephone = $telephone;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Medecin>
+     */
+    public function getMedecins(): Collection
+    {
+        return $this->medecins;
+    }
+
+    public function addMedecin(Medecin $medecin): static
+    {
+        if (!$this->medecins->contains($medecin)) {
+            $this->medecins->add($medecin);
+            $medecin->addCabinet($this);
+        }
+
+        return $this;
+    }
+
+    public function removeMedecin(Medecin $medecin): static
+    {
+        if ($this->medecins->removeElement($medecin)) {
+            $medecin->removeCabinet($this);
+        }
 
         return $this;
     }

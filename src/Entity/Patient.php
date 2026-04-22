@@ -145,22 +145,21 @@ class Patient
         return $this->rendezVous;
     }
 
-    public function addRendezVou(RendezVous $rendezVou): static
+    public function addRendezVous(RendezVous $rendezVous): static
     {
-        if (!$this->rendezVous->contains($rendezVou)) {
-            $this->rendezVous->add($rendezVou);
-            $rendezVou->setPatient($this);
+        if (!$this->rendezVous->contains($rendezVous)) {
+            $this->rendezVous->add($rendezVous);
+            $rendezVous->setPatient($this);
         }
 
         return $this;
     }
 
-    public function removeRendezVou(RendezVous $rendezVou): static
+    public function removeRendezVous(RendezVous $rendezVous): static
     {
-        if ($this->rendezVous->removeElement($rendezVou)) {
-            // set the owning side to null (unless already changed)
-            if ($rendezVou->getPatient() === $this) {
-                $rendezVou->setPatient(null);
+        if ($this->rendezVous->removeElement($rendezVous)) {
+            if ($rendezVous->getPatient() === $this) {
+                $rendezVous->setPatient(null);
             }
         }
 

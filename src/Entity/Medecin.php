@@ -33,13 +33,13 @@ class Medecin
     /**
      * @var Collection<int, Specialite>
      */
-    #[ORM\ManyToMany(targetEntity: Specialite::class)]
+    #[ORM\ManyToMany(targetEntity: Specialite::class, inversedBy: 'medecins')]
     private Collection $specialites;
 
     /**
      * @var Collection<int, Cabinet>
      */
-    #[ORM\ManyToMany(targetEntity: Cabinet::class)]
+    #[ORM\ManyToMany(targetEntity: Cabinet::class, mappedBy: 'medecins')]
     private Collection $cabinets;
 
     public function __construct()
@@ -125,6 +125,7 @@ class Medecin
     {
         if (!$this->specialites->contains($specialite)) {
             $this->specialites->add($specialite);
+            $specialite->addMedecin($this);
         }
 
         return $this;
@@ -132,7 +133,9 @@ class Medecin
 
     public function removeSpecialite(Specialite $specialite): static
     {
-        $this->specialites->removeElement($specialite);
+        if ($this->specialites->removeElement($specialite)) {
+            $specialite->removeMedecin($this);
+        }
 
         return $this;
     }
@@ -149,6 +152,7 @@ class Medecin
     {
         if (!$this->cabinets->contains($cabinet)) {
             $this->cabinets->add($cabinet);
+            $cabinet->addMedecin($this);
         }
 
         return $this;
@@ -156,7 +160,9 @@ class Medecin
 
     public function removeCabinet(Cabinet $cabinet): static
     {
-        $this->cabinets->removeElement($cabinet);
+        if ($this->cabinets->removeElement($cabinet)) {
+            $cabinet->removeMedecin($this);
+        }
 
         return $this;
     }
